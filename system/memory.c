@@ -38,6 +38,10 @@
 
 #include "memory-internal.h"
 
+#ifdef QEMU_UAE
+#include "uae/log.h"
+#endif
+
 //#define DEBUG_UNASSIGNED
 
 static unsigned memory_region_transaction_depth;
@@ -1336,7 +1340,11 @@ static uint64_t unassigned_mem_read(void *opaque, hwaddr addr,
                                     unsigned size)
 {
 #ifdef DEBUG_UNASSIGNED
+#ifdef QEMU_UAE
+    uae_log("Unassigned mem read " HWADDR_FMT_plx "\n", addr);
+#else
     printf("Unassigned mem read " HWADDR_FMT_plx "\n", addr);
+#endif
 #endif
     return 0;
 }
@@ -1345,7 +1353,11 @@ static void unassigned_mem_write(void *opaque, hwaddr addr,
                                  uint64_t val, unsigned size)
 {
 #ifdef DEBUG_UNASSIGNED
+#ifdef QEMU_UAE
+    uae_log("Unassigned mem write " HWADDR_FMT_plx " = 0x%"PRIx64"\n", addr, val);
+#else
     printf("Unassigned mem write " HWADDR_FMT_plx " = 0x%"PRIx64"\n", addr, val);
+#endif
 #endif
 }
 
