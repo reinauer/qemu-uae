@@ -6505,6 +6505,12 @@ static bool decode_legacy(PowerPCCPU *cpu, DisasContext *ctx, uint32_t insn)
         inval = handler->inval1;
     }
 
+#ifdef QEMU_UAE
+    /*
+     * Toni Wilen confirmed that real CSPPC PPC CPU ignores invalid bits.
+     * Skip this check for UAE compatibility.
+     */
+#else
     if (unlikely((insn & inval) != 0)) {
         qemu_log_mask(LOG_GUEST_ERROR, "invalid bits: %08x for opcode: "
                       "%02x - %02x - %02x - %02x (%08x) "
@@ -6513,6 +6519,7 @@ static bool decode_legacy(PowerPCCPU *cpu, DisasContext *ctx, uint32_t insn)
                       insn, ctx->cia);
         return false;
     }
+#endif
 
     handler->handler(ctx);
     return true;
