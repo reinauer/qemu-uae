@@ -21,8 +21,12 @@
 #include "qemu/log.h"
 #include "qemu/module.h"
 #include "qemu/main-loop.h"
+#include "qemu/accel.h"
 #include "qemu-version.h"
 #include "qapi/error.h"
+#include "qom/object.h"
+#include "exec/cpu-common.h"
+#include "hw/core/boards.h"
 #include "system/system.h"
 #include "system/cpus.h"
 #include "system/runstate.h"
@@ -59,6 +63,53 @@ static struct {
     bool exit_main_loop;
 } state;
 
+static bool qemu_uae_create_machine(void)
+{
+    static const char *const containers[] = {
+        "unattached",
+        "peripheral",
+        "peripheral-anon",
+    };
+    ObjectClass *machine_class;
+    AccelClass *accel_class;
+    AccelState *accel;
+    int ret;
+
+    if (current_machine) {
+        return true;
+    }
+
+    machine_class = object_class_by_name(MACHINE_TYPE_NAME("none"));
+    if (!machine_class) {
+        uae_log("QEMU: failed to find none machine class\n");
+        return false;
+    }
+
+    current_machine = MACHINE(object_new_with_class(machine_class));
+    object_property_add_child(object_get_root(), "machine",
+                              OBJECT(current_machine));
+    for (int i = 0; i < G_N_ELEMENTS(containers); i++) {
+        object_property_add_new_container(OBJECT(current_machine),
+                                          containers[i]);
+    }
+    cpu_exec_init_all();
+
+    accel_class = accel_find("tcg");
+    if (!accel_class) {
+        uae_log("QEMU: failed to find TCG accelerator\n");
+        return false;
+    }
+
+    accel = ACCEL(object_new_with_class(OBJECT_CLASS(accel_class)));
+    ret = accel_init_machine(accel, current_machine);
+    if (ret < 0) {
+        uae_log("QEMU: failed to initialize TCG accelerator: %d\n", ret);
+        return false;
+    }
+    accel_init_interfaces(accel_class);
+    return true;
+}
+
 void qemu_uae_set_started(void)
 {
     state.started = true;
@@ -89,9 +140,8 @@ static bool initialize(void)
     uae_log("QEMU: Initialize QEMU-UAE (QEMU %s + API %d.%d.%d)\n",
             QEMU_FULL_VERSION, major, minor, revision);
 
-    /* Initialize the class system (and probably other stuff) */
-    uae_log("QEMU: MODULE_INIT_QOM\n");
-    module_call_init(MODULE_INIT_QOM);
+    uae_log("QEMU: qemu_init_subsystems\n");
+    qemu_init_subsystems();
 
     /* qemu_init_main_loop installs signals */
     /* FIXME: could conflict with UAE */
@@ -99,14 +149,14 @@ static bool initialize(void)
     if (err) {
         uae_log("QEMU: qemu_init_main_loop failed: %s\n", error_get_pretty(err));
         error_free(err);
+        qemu_uae_mutex_unlock();
         return false;
     }
 
-    /* Initialize conditions and mutex needed by CPU emulation */
-    qemu_init_cpu_loop();
-
-    /* Lock BQL */
-    qemu_uae_mutex_lock();
+    if (!qemu_uae_create_machine()) {
+        qemu_uae_mutex_unlock();
+        return false;
+    }
 
     qemu_uae_mutex_unlock();
     return true;

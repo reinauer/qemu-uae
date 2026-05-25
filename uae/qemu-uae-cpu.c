@@ -101,6 +101,7 @@ static void qemu_uae_machine_reset(void *opaque)
 {
     PowerPCCPU *cpu = opaque;
     cpu_reset(CPU(cpu));
+    cpu_ppc_tb_reset(&cpu->env);
 }
 
 static bool qemu_uae_machine_init(const char *model)
@@ -132,6 +133,7 @@ static bool qemu_uae_machine_init(const char *model)
         return false;
     }
 
+    cpu_ppc_tb_init(state.env, TBFREQ);
     qemu_register_reset(qemu_uae_machine_reset, state.cpu);
     return true;
 }
