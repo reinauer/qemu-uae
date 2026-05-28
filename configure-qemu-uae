@@ -82,6 +82,7 @@ esac
     --disable-numa \
     --disable-rdma \
     --disable-smartcard \
+    --disable-slirp \
     --disable-pie \
     --disable-vvfat \
     --disable-qed \
