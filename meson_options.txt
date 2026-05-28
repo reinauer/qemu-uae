@@ -47,6 +47,8 @@ option('docs', type : 'feature', value : 'auto',
        description: 'Documentations build support')
 option('fuzzing', type : 'boolean', value: false,
        description: 'build fuzzing targets')
+option('qemu_uae', type : 'boolean', value: false,
+       description: 'build QEMU-UAE shared library plugin for WinUAE/FS-UAE')
 option('gettext', type : 'feature', value : 'auto',
        description: 'Localization of the GTK+ user interface')
 option('modules', type : 'feature', value : 'disabled',

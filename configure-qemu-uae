@@ -1,0 +1,97 @@
+#!/bin/sh -e
+#
+# Configure script for building QEMU-UAE plugin
+#
+
+# Note: QEMU_UAE is now defined via meson's -Dqemu_uae=true option
+EXTRA_CFLAGS="-DDEBUG_UNASSIGNED"
+
+# Optional debug flags (uncomment as needed):
+# EXTRA_CFLAGS="$EXTRA_CFLAGS -DDEBUG_DISAS"
+# EXTRA_CFLAGS="$EXTRA_CFLAGS -DPPC_DEBUG_DISAS"
+# EXTRA_CFLAGS="$EXTRA_CFLAGS -DPPC_DEBUG_IRQ"
+# EXTRA_CFLAGS="$EXTRA_CFLAGS -DPPC_DEBUG_TB"
+# EXTRA_CFLAGS="$EXTRA_CFLAGS -DDEBUG_MMU"
+
+OS_NAME=$(uname -s)
+case $OS_NAME in
+MINGW*|MSYS*)
+    export CC=gcc
+    export CXX=g++
+    ;;
+*)
+    EXTRA_CFLAGS="$EXTRA_CFLAGS -fPIC"
+    ;;
+esac
+
+# Run meson-based configure with minimal features for UAE
+./configure \
+    --target-list=ppc-softmmu \
+    --extra-cflags="$EXTRA_CFLAGS" \
+    -Dqemu_uae=true \
+    -Db_staticpic=true \
+    --disable-werror \
+    --disable-strip \
+    --disable-tools \
+    --disable-docs \
+    --disable-sdl \
+    --disable-gtk \
+    --disable-cocoa \
+    --disable-vnc \
+    --disable-dbus-display \
+    --disable-pvg \
+    --disable-coreaudio \
+    --audio-drv-list= \
+    --disable-auth-pam \
+    --disable-attr \
+    --disable-bzip2 \
+    --disable-cap-ng \
+    --disable-curl \
+    --disable-fuse \
+    --disable-gio \
+    --disable-gcrypt \
+    --disable-gnutls \
+    --disable-hv-balloon \
+    --disable-libiscsi \
+    --disable-libnfs \
+    --disable-libssh \
+    --disable-nettle \
+    --disable-png \
+    --disable-pixman \
+    --disable-vmnet \
+    --disable-vde \
+    --disable-netmap \
+    --disable-zstd \
+    --disable-virtfs \
+    --disable-xen \
+    --disable-brlapi \
+    --disable-curses \
+    --disable-kvm \
+    --disable-user \
+    --disable-vhost-net \
+    --disable-spice \
+    --disable-tpm \
+    --disable-libusb \
+    --disable-lzo \
+    --disable-snappy \
+    --disable-guest-agent \
+    --disable-linux-aio \
+    --disable-seccomp \
+    --disable-glusterfs \
+    --disable-capstone \
+    --disable-numa \
+    --disable-rdma \
+    --disable-smartcard \
+    --disable-pie \
+    --disable-vvfat \
+    --disable-qed \
+    --disable-parallels \
+    --disable-bochs \
+    --disable-cloop \
+    --disable-dmg \
+    --disable-qcow1 \
+    --disable-vdi \
+    --disable-vhdx \
+    --disable-vmdk \
+    --disable-vpc \
+    "$@"

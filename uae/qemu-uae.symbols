@@ -1,0 +1,25 @@
+{
+  global:
+    ppc_cpu_init;
+    ppc_cpu_map_memory;
+    ppc_cpu_reset;
+    ppc_cpu_run_continuous;
+    ppc_cpu_set_state;
+    qemu_uae_init;
+    qemu_uae_lock;
+    qemu_uae_ppc_external_interrupt;
+    qemu_uae_ppc_in_cpu_thread;
+    qemu_uae_ppc_init;
+    qemu_uae_slirp_init;
+    qemu_uae_slirp_input;
+    qemu_uae_start;
+    qemu_uae_version;
+    uae_log;
+    uae_ppc_io_mem_read;
+    uae_ppc_io_mem_read64;
+    uae_ppc_io_mem_write;
+    uae_ppc_io_mem_write64;
+    uae_slirp_output;
+  local:
+    *;
+};

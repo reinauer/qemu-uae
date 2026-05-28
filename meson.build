@@ -2452,6 +2452,7 @@ config_host_data.set('CONFIG_COCOA', cocoa.found())
 config_host_data.set('CONFIG_DARWIN', host_os == 'darwin')
 config_host_data.set('CONFIG_FDT', fdt.found())
 config_host_data.set('CONFIG_FUZZ', get_option('fuzzing'))
+config_host_data.set('QEMU_UAE', get_option('qemu_uae'))
 config_host_data.set('CONFIG_GCOV', get_option('b_coverage'))
 config_host_data.set('CONFIG_LIBUDEV', libudev.found())
 config_host_data.set('CONFIG_LINUX', host_os == 'linux')
@@ -4445,6 +4446,37 @@ foreach target : target_dirs
     exe_name = exe['name']
     if host_os == 'darwin'
       exe_name += '-unsigned'
+    endif
+
+    # Build shared library for QEMU-UAE plugin instead of executable
+    if get_option('qemu_uae') and target_name == 'ppc'
+      qemu_uae_link_args = []
+      qemu_uae_link_depends = [block_syms, qemu_syms]
+      if host_os == 'darwin'
+        qemu_uae_exports = files('uae/qemu-uae-ld64.symbols')
+        qemu_uae_link_depends += qemu_uae_exports
+        qemu_uae_link_args += ['-Wl,-exported_symbols_list,'
+                               + qemu_uae_exports[0].full_path()]
+      elif host_os != 'windows'
+        qemu_uae_exports = files('uae/qemu-uae.symbols')
+        qemu_uae_link_depends += qemu_uae_exports
+        qemu_uae_link_args += ['-Wl,--version-script='
+                               + qemu_uae_exports[0].full_path()]
+      endif
+      emulator = shared_library('qemu-uae',
+                 install: true,
+                 c_args: c_args,
+                 dependencies: arch_deps + exe['dependencies'],
+                 objects: lib.extract_all_objects(recursive: true),
+                 link_depends: qemu_uae_link_depends,
+                 link_args: qemu_uae_link_args,
+                 name_prefix: '',
+                 name_suffix: 'so')
+      emulators += {'qemu-uae': emulator}
+      # Also add qemu-system-ppc alias for test compatibility
+      emulators += {'qemu-system-ppc': emulator}
+      # Skip the rest of the loop for UAE builds
+      continue
     endif
 
     emulator = executable(exe_name, exe['sources'],

@@ -108,8 +108,6 @@ static bool initialize(void)
     /* Lock BQL */
     qemu_uae_mutex_lock();
 
-    qemu_thread_naming(true);
-
     qemu_uae_mutex_unlock();
     return true;
 }
