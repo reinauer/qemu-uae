@@ -60,6 +60,10 @@ ppc_system_ss.add(when: 'TARGET_PPC64', if_true: files(
   'mmu-radix64.c',
 ))
 
+ppc_system_ss.add(files(
+  meson.project_source_root() / 'uae' / 'qemu-uae-cpu.c',
+))
+
 target_arch += {'ppc': ppc_ss}
 target_user_arch += {'ppc': ppc_user_ss}
 target_system_arch += {'ppc': ppc_system_ss}

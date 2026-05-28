@@ -63,6 +63,10 @@
 #include "system/tpm.h"
 #include "trace.h"
 
+#ifdef QEMU_UAE
+#include "uae/qemu-uae.h"
+#endif
+
 static NotifierList exit_notifiers =
     NOTIFIER_LIST_INITIALIZER(exit_notifiers);
 
@@ -942,11 +946,24 @@ int qemu_main_loop(void)
     int status = EXIT_SUCCESS;
 
     while (!main_loop_should_exit(&status)) {
+#ifdef QEMU_UAE
+        if (qemu_uae_main_loop_should_exit()) {
+            break;
+        }
+#endif
         main_loop_wait(false);
     }
 
     return status;
 }
+
+#ifdef QEMU_UAE
+/* Export main_loop function for UAE */
+void main_loop(void)
+{
+    qemu_main_loop();
+}
+#endif
 
 void qemu_add_exit_notifier(Notifier *notify)
 {

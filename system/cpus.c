@@ -48,6 +48,10 @@
 #include "hw/core/hw-error.h"
 #include "trace.h"
 
+#ifdef QEMU_UAE
+#include "uae/qemu-uae.h"
+#endif
+
 #ifdef CONFIG_LINUX
 
 #include <sys/prctl.h>
@@ -589,6 +593,66 @@ void qemu_cond_wait_bql(QemuCond *cond)
 {
     qemu_cond_wait(cond, &bql);
 }
+
+#ifdef QEMU_UAE
+/*
+ * UAE mutex wrapper functions
+ * These provide the locking interface expected by the UAE PPC plugin
+ */
+
+static QemuCond qemu_uae_proceeded_cond;
+static bool uae_requesting_mutex;
+static bool uae_trylock_status;
+static bool qemu_uae_cond_initialized;
+
+static void qemu_uae_ensure_cond_init(void)
+{
+    if (!qemu_uae_cond_initialized) {
+        qemu_cond_init(&qemu_uae_proceeded_cond);
+        qemu_uae_cond_initialized = true;
+    }
+}
+
+void qemu_uae_mutex_lock(void)
+{
+    qemu_uae_ensure_cond_init();
+    bql_lock();
+}
+
+void qemu_uae_mutex_unlock(void)
+{
+    bql_unlock();
+}
+
+int qemu_uae_mutex_trylock(void)
+{
+    CPUState *first_cpu_local = first_cpu;
+
+    qemu_uae_ensure_cond_init();
+    uae_requesting_mutex = true;
+    int result = qemu_mutex_trylock(&bql);
+    if (result) {
+        /* Lock was not acquired */
+        if (uae_trylock_status == false && first_cpu_local) {
+            qemu_cpu_kick(first_cpu_local);
+            uae_trylock_status = true;
+        }
+    } else {
+        /* Lock acquired */
+        set_bql_locked(true);
+        uae_trylock_status = false;
+        uae_requesting_mutex = false;
+        qemu_cond_broadcast(&qemu_uae_proceeded_cond);
+    }
+    return result;
+}
+
+void qemu_uae_mutex_trylock_cancel(void)
+{
+    uae_requesting_mutex = false;
+    uae_trylock_status = false;
+}
+#endif /* QEMU_UAE */
 
 void qemu_cond_timedwait_bql(QemuCond *cond, int ms)
 {

@@ -3852,6 +3852,7 @@ user_ss.add(files('cpu-target.c'))
 system_ss.add(files('cpu-target.c'))
 
 subdir('system')
+subdir('uae')
 
 # Work around a gcc bug/misfeature wherein constant propagation looks
 # through an alias:
