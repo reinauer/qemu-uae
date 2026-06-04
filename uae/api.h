@@ -19,8 +19,10 @@
 
 #ifdef __cplusplus
 #define UAE_EXTERN_C extern "C"
+#define UAE_EXTERN_C_DATA extern "C"
 #else
 #define UAE_EXTERN_C
+#define UAE_EXTERN_C_DATA extern
 #endif
 
 /* UAE_EXPORT / UAE_IMPORT are mainly intended as helpers for UAEAPI
@@ -33,6 +35,9 @@
 #define UAE_EXPORT __attribute__((visibility("default")))
 #define UAE_IMPORT
 #endif
+
+#define UAE_EXPORT_DATA UAE_EXTERN_C_DATA UAE_EXPORT
+#define UAE_IMPORT_DATA UAE_EXTERN_C_DATA UAE_IMPORT
 
 /* UAEAPI marks a function for export across library boundaries. You'll
  * likely want to use this together with UAECALL. */

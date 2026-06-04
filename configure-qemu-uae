@@ -15,9 +15,21 @@ EXTRA_CFLAGS="-DDEBUG_UNASSIGNED"
 
 OS_NAME=$(uname -s)
 case $OS_NAME in
-MINGW*|MSYS*)
-    export CC=gcc
-    export CXX=g++
+MINGW*|MSYS*|CLANG*|UCRT*)
+    if [ -z "${CC:-}" ]; then
+        if command -v clang >/dev/null 2>&1; then
+            export CC=clang
+        else
+            export CC=gcc
+        fi
+    fi
+    if [ -z "${CXX:-}" ]; then
+        if command -v clang++ >/dev/null 2>&1; then
+            export CXX=clang++
+        else
+            export CXX=g++
+        fi
+    fi
     ;;
 *)
     EXTRA_CFLAGS="$EXTRA_CFLAGS -fPIC"

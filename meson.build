@@ -4452,6 +4452,7 @@ foreach target : target_dirs
     if get_option('qemu_uae') and target_name == 'ppc'
       qemu_uae_link_args = []
       qemu_uae_link_depends = [block_syms, qemu_syms]
+      qemu_uae_suffix = host_os == 'windows' ? 'dll' : 'so'
       if host_os == 'darwin'
         qemu_uae_exports = files('uae/qemu-uae-ld64.symbols')
         qemu_uae_link_depends += qemu_uae_exports
@@ -4471,7 +4472,7 @@ foreach target : target_dirs
                  link_depends: qemu_uae_link_depends,
                  link_args: qemu_uae_link_args,
                  name_prefix: '',
-                 name_suffix: 'so')
+                 name_suffix: qemu_uae_suffix)
       emulators += {'qemu-uae': emulator}
       # Also add qemu-system-ppc alias for test compatibility
       emulators += {'qemu-system-ppc': emulator}

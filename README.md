@@ -26,14 +26,16 @@ cd build
 ninja
 ```
 
-The shared library will be created at `build/qemu-uae.so`.
+The shared library will be created as `build/qemu-uae.so` on Unix
+hosts or `build/qemu-uae.dll` on Windows hosts.
 
 ### Build Options
 
 The `configure-qemu-uae` script configures QEMU with minimal features required for UAE:
 
 - Target: `ppc-softmmu` only
-- Builds as shared library (`qemu-uae.so`) instead of executable
+- Builds as shared library (`qemu-uae.so` or `qemu-uae.dll`) instead
+  of executable
 - Disables unnecessary features (SDL, GTK, VNC, KVM, etc.)
 
 Debug options can be enabled by uncommenting lines in `configure-qemu-uae`:

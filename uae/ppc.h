@@ -17,8 +17,10 @@
 
 #ifdef UAE
 #define PPCAPI UAE_EXTERN_C UAE_IMPORT
+#define PPCDATA UAE_IMPORT_DATA
 #else
 #define PPCAPI UAE_EXTERN_C UAE_EXPORT
+#define PPCDATA UAE_EXPORT_DATA
 #endif
 #define PPCCALL UAECALL
 
@@ -84,10 +86,10 @@ bool UAECALL uae_ppc_io_mem_write64(uint32_t addr, uint64_t data);
 
 #else
 
-extern uae_ppc_io_mem_read_function uae_ppc_io_mem_read;
-extern uae_ppc_io_mem_write_function uae_ppc_io_mem_write;
-extern uae_ppc_io_mem_read64_function uae_ppc_io_mem_read64;
-extern uae_ppc_io_mem_write64_function uae_ppc_io_mem_write64;
+PPCDATA uae_ppc_io_mem_read_function uae_ppc_io_mem_read;
+PPCDATA uae_ppc_io_mem_write_function uae_ppc_io_mem_write;
+PPCDATA uae_ppc_io_mem_read64_function uae_ppc_io_mem_read64;
+PPCDATA uae_ppc_io_mem_write64_function uae_ppc_io_mem_write64;
 
 #endif
 
