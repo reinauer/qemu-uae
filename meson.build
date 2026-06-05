@@ -4453,6 +4453,10 @@ foreach target : target_dirs
       qemu_uae_link_args = []
       qemu_uae_link_depends = [block_syms, qemu_syms]
       qemu_uae_suffix = host_os == 'windows' ? 'dll' : 'so'
+      qemu_uae_deps = arch_deps + exe['dependencies']
+      if host_os == 'windows' and get_option('prefer_static')
+        qemu_uae_deps += cc.find_library('iconv', required: true)
+      endif
       if host_os == 'darwin'
         qemu_uae_exports = files('uae/qemu-uae-ld64.symbols')
         qemu_uae_link_depends += qemu_uae_exports
@@ -4467,7 +4471,7 @@ foreach target : target_dirs
       emulator = shared_library('qemu-uae',
                  install: true,
                  c_args: c_args,
-                 dependencies: arch_deps + exe['dependencies'],
+                 dependencies: qemu_uae_deps,
                  objects: lib.extract_all_objects(recursive: true),
                  link_depends: qemu_uae_link_depends,
                  link_args: qemu_uae_link_args,
