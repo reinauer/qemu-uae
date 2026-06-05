@@ -30,6 +30,8 @@ MINGW*|MSYS*|CLANG*|UCRT*)
             export CXX=g++
         fi
     fi
+    # Keep the Windows plugin independent of sidecar MSYS2 DLLs.
+    set -- --static "$@"
     ;;
 *)
     EXTRA_CFLAGS="$EXTRA_CFLAGS -fPIC"
