@@ -32,6 +32,18 @@ MINGW*|MSYS*|CLANG*|UCRT*)
     fi
     # Keep the Windows plugin independent of sidecar MSYS2 DLLs.
     set -- --static "$@"
+    if [ -n "${QEMU_UAE_PDB:-}" ]; then
+        if ! "${CC}" --version 2>/dev/null | grep -qi clang; then
+            echo "QEMU_UAE_PDB requires clang on Windows" >&2
+            exit 1
+        fi
+        if ! command -v ld.lld >/dev/null 2>&1; then
+            echo "QEMU_UAE_PDB requires ld.lld on Windows" >&2
+            exit 1
+        fi
+        EXTRA_CFLAGS="$EXTRA_CFLAGS -g -gcodeview"
+        set -- --extra-ldflags="-g -fuse-ld=lld -Wl,--pdb=qemu-uae.pdb" "$@"
+    fi
     ;;
 *)
     EXTRA_CFLAGS="$EXTRA_CFLAGS -fPIC"
