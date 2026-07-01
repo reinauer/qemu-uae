@@ -1,3 +1,4 @@
+_ppc_cpu_flush_jit
 _ppc_cpu_init
 _ppc_cpu_map_memory
 _ppc_cpu_reset
