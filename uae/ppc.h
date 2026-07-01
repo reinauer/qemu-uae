@@ -116,6 +116,7 @@ uint64_t PPCCALL ppc_cpu_get_dec(void);
 void PPCCALL ppc_cpu_do_dec(int value);
 void PPCCALL ppc_cpu_pause(int pause);
 void PPCCALL ppc_cpu_reset(void);
+void PPCCALL ppc_cpu_flush_jit(void);
 
 #define PPC_CPU_STATE_RUNNING 1
 #define PPC_CPU_STATE_PAUSED 2

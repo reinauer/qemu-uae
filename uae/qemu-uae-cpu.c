@@ -20,6 +20,7 @@
 #include "qemu/osdep.h"
 #include "qemu/log.h"
 #include "qemu/module.h"
+#include "qemu/atomic.h"
 #include "qapi/error.h"
 #include "hw/ppc/ppc.h"
 #include "hw/core/boards.h"
@@ -51,6 +52,13 @@ static struct {
     QemuThread pause_thread;
     uint32_t hid1;
 } state;
+
+/*
+ * Set by UAE from the m68k thread when OS3.x/WarpOS has patched PPC code or
+ * page tables directly in shared RAM. It is consumed by the PPC vCPU thread at
+ * a cpu_exec() safe point before looking up the next TB.
+ */
+int uae_ppc_flush_requested;
 
 static uint64_t indirect_read(void *opaque, hwaddr addr, unsigned size)
 {
@@ -368,6 +376,20 @@ void PPCAPI ppc_cpu_reset(void)
 
     uae_log("QEMU: Flushing all JIT translation blocks\n");
     queue_tb_flush(CPU(state.cpu));
+}
+
+void PPCAPI ppc_cpu_flush_jit(void)
+{
+    qatomic_set(&uae_ppc_flush_requested, 1);
+
+    /*
+     * Direct-chained TBs can keep running generated code without returning to
+     * cpu_exec_loop(). Kick the PPC vCPU so the pending flush is consumed at
+     * the next TB boundary.
+     */
+    if (state.cpu) {
+        cpu_exit(CPU(state.cpu));
+    }
 }
 
 static void qemu_uae_log_cpu_state(void)

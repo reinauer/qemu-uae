@@ -46,6 +46,17 @@
 #include "tb-context.h"
 #include "tb-internal.h"
 #include "internal-common.h"
+#ifdef QEMU_UAE
+#include "exec/cputlb.h"
+#include "exec/tb-flush.h"
+
+/*
+ * Set by ppc_cpu_flush_jit() when the UAE m68k thread has patched PPC code or
+ * page tables directly in shared RAM. Consume it from the PPC vCPU between TBs,
+ * where QEMU can legally run a synchronous TLB/TB flush.
+ */
+extern int uae_ppc_flush_requested;
+#endif
 
 /* -icount align implementation. */
 
@@ -940,6 +951,13 @@ cpu_exec_loop(CPUState *cpu, SyncClocks *sc)
         int tb_exit = 0;
 
         while (!cpu_handle_interrupt(cpu, &last_tb)) {
+#ifdef QEMU_UAE
+            if (qatomic_xchg(&uae_ppc_flush_requested, 0)) {
+                tlb_flush(cpu);
+                tb_flush__exclusive_or_serial();
+                last_tb = NULL;
+            }
+#endif
             TranslationBlock *tb;
             TCGTBCPUState s = cpu->cc->tcg_ops->get_tb_cpu_state(cpu);
             s.cflags = cpu->cflags_next_tb;
