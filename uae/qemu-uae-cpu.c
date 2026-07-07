@@ -21,6 +21,7 @@
 #include "qemu/log.h"
 #include "qemu/module.h"
 #include "qemu/atomic.h"
+#include "qemu/timer.h"
 #include "qapi/error.h"
 #include "hw/ppc/ppc.h"
 #include "hw/core/boards.h"
@@ -399,12 +400,66 @@ static void qemu_uae_log_cpu_state(void)
     cpu_dump_state(CPU(state.cpu), stderr, flags);
 }
 
+static bool qemu_uae_all_vcpus_paused(void)
+{
+    CPUState *cpu;
+
+    CPU_FOREACH(cpu) {
+        if (!cpu->stopped) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/* pause_all_vcpus() issues the stop request once and then waits without a
+ * timeout; a concurrent resume_all_vcpus() (a PPC-initiated reboot racing
+ * a WinUAE pause or quit) clears the request and the wait never finishes.
+ * This variant re-arms the request until every vCPU has really stopped.
+ * Must be called with the BQL held, from outside the vCPU thread. */
+static void qemu_uae_pause_all_vcpus(void)
+{
+    CPUState *cpu;
+    int waited_ms = 0;
+
+    qemu_clock_enable(QEMU_CLOCK_VIRTUAL, false);
+    CPU_FOREACH(cpu) {
+        cpu->stop = true;
+        cpu_exit(cpu);
+    }
+    while (!qemu_uae_all_vcpus_paused()) {
+        qemu_uae_mutex_unlock();
+        g_usleep(2000);
+        qemu_uae_mutex_lock();
+        waited_ms += 2;
+        CPU_FOREACH(cpu) {
+            if (!cpu->stopped) {
+                if (!cpu->stop) {
+                    uae_log("QEMU: pause request was cancelled, re-arming\n");
+                    cpu->stop = true;
+                }
+                cpu_exit(cpu);
+            }
+        }
+        if (waited_ms % 1000 == 0) {
+            uae_log("QEMU: still waiting for vCPU pause (%d ms)\n", waited_ms);
+        }
+    }
+}
+
 void PPCAPI ppc_cpu_set_state(int set_state)
 {
     uae_log("QEMU: Set state %d\n", set_state);
     qemu_uae_lock_if_needed();
+    uae_log("QEMU: Set state %d (lock acquired)\n", set_state);
     if (set_state == PPC_CPU_STATE_PAUSED) {
-        pause_all_vcpus();
+        if (qemu_uae_ppc_in_cpu_thread()) {
+            /* Self-pause: the single vCPU marks itself stopped and
+             * returns without waiting; stock semantics are safe. */
+            pause_all_vcpus();
+        } else {
+            qemu_uae_pause_all_vcpus();
+        }
         state.cpu_state = PPC_CPU_STATE_PAUSED;
         uae_log("QEMU: Paused!\n");
         qemu_uae_log_cpu_state();
